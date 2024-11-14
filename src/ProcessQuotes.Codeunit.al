@@ -3,7 +3,7 @@ namespace Vjeko.Demos;
 using System.Threading;
 using Microsoft.Sales.Document;
 
-codeunit 50011 ProcessQuotes
+codeunit 50011 ProcessQuotes implements IProcessQuotes
 {
     TableNo = "Job Queue Entry";
 
@@ -13,21 +13,26 @@ codeunit 50011 ProcessQuotes
     end;
 
     procedure ProcessQuotes()
+    begin
+        ProcessQuotes(this);
+    end;
+
+    internal procedure ProcessQuotes(Controller: Interface IProcessQuotes)
     var
         SalesQuote: Record "Sales Header";
     begin
-        if not FindQuotes(SalesQuote) then
+        if not Controller.FindQuotes(SalesQuote) then
             exit;
 
-        MakeAndPostOrders(SalesQuote);
+        Controller.MakeAndPostOrders(SalesQuote);
     end;
 
-    local procedure FindQuotes(var SalesQuote: Record "Sales Header"): Boolean
+    internal procedure FindQuotes(var SalesQuote: Record "Sales Header"): Boolean
     begin
 
     end;
 
-    local procedure MakeAndPostOrders(var SalesQuote: Record "Sales Header")
+    internal procedure MakeAndPostOrders(var SalesQuote: Record "Sales Header")
     begin
 
     end;
