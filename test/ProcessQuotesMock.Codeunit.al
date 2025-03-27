@@ -1,73 +1,218 @@
-namespace Vjeko.Demos;
+namespace Vjeko.Demos.Test;
 
 using Microsoft.Sales.Document;
-using Microsoft.Sales.Setup;
+using Vjeko.Demos;
 using System.Security.User;
+using Microsoft.Sales.Setup;
+using Microsoft.Inventory.Item;
 
-codeunit 50100 ProcessQuotesMock implements IProcessQuotes
+codeunit 60013 ProcessQuotesMock implements IProcessQuotes
 {
     Access = Internal;
 
     var
-        _findQuotesResult: Boolean;
-        _isInvokedMakeAndPostOrders: Boolean;
-        _lastMakeAndPostOrdersParam: Record "Sales Header";
-        _domesticCustomerPostingGroup: Code[20];
-        _salespersonCode: Code[20];
-        _isInvokedSetFilters: Boolean;
-        _lastSetFiltersParam: Record "Sales Header";
+        ExpectedFindQuotesResult: Boolean;
+        FindQuotesInvoked: Boolean;
+        MakeAndPostOrdersInvoked: Boolean;
+        ExpectedGetDomesticPostingGroupResult: Code[20];
+        ExpectedGetSalespersonCodeResult: Code[20];
+        ExpectedIsLineApplicable: List of [Boolean];
+        ExpectedConvertQuoteToOrderResult: Boolean;
+        ExpectedReleaseOrderResult: Boolean;
+        ExpectedPostOrderResult: Boolean;
+        SetFiltersInvoked: Boolean;
+        SetFilters_InvokedWith_SalespersonCode: Code[20];
+        SetFilters_InvokedWith_CustomerPostingGroup: Code[20];
+        SetFilters_InvokedWith_AtDate: Date;
+        MakeAndPostOneInvokedCount: Integer;
+        GetItemInvoked: Boolean;
+        SetLineFiltersInvoked: Boolean;
+        IsLineApplicableInvokedCount: Integer;
+        LogErrorInvoked: Boolean;
+        LogError_InvokedWith_EventId: Text;
+        LogError_InvokedWith_ErrorMessage: Text;
+        ConvertQuoteToOrderInvoked: Boolean;
+        ReleaseOrderInvoked: Boolean;
+        PostOrderInvoked: Boolean;
+        CommitTransactionInvokedCount: Integer;
 
-    procedure SetResult_FindQuotes(NewResult: Boolean)
+    procedure SetExpected_FindQuotes(Expected: Boolean)
     begin
-        _findQuotesResult := NewResult;
+        ExpectedFindQuotesResult := Expected;
     end;
 
-    procedure IsInvoked_MakeAndPostOrders(var SalesQuote: Record "Sales Header"): Boolean
+    procedure SetExpected_GetDomesticPostingGroup(Expected: Code[20])
     begin
-        SalesQuote := _lastMakeAndPostOrdersParam;
-        exit(_isInvokedMakeAndPostOrders);
+        ExpectedGetDomesticPostingGroupResult := Expected;
     end;
 
-    procedure FindQuotes(var SalesQuote: Record "Sales Header"; Controller: Interface IProcessQuotes): Boolean;
+    procedure SetExpected_GetSalespersonCode(Expected: Code[20])
     begin
-        exit(_findQuotesResult);
+        ExpectedGetSalespersonCodeResult := Expected;
     end;
 
-    procedure MakeAndPostOrders(var SalesQuote: Record "Sales Header");
+    procedure SetExpected_IsLineApplicable(Expected: Boolean)
     begin
-        _isInvokedMakeAndPostOrders := true;
-        _lastMakeAndPostOrdersParam := SalesQuote;
+        ExpectedIsLineApplicable.Add(Expected);
     end;
 
-    procedure GetDomesticCustomerPostingGroup(var SalesSetup: Record "Sales & Receivables Setup"): Code[20]
+    procedure SetExpected_ConvertQuoteToOrder(Expected: Boolean)
     begin
-        exit(_domesticCustomerPostingGroup);
+        ExpectedConvertQuoteToOrderResult := Expected;
+    end;
+
+    procedure SetExpected_ReleaseOrder(Expected: Boolean)
+    begin
+        ExpectedReleaseOrderResult := Expected;
+    end;
+
+    procedure SetExpected_PostOrder(Expected: Boolean)
+    begin
+        ExpectedPostOrderResult := Expected;
+    end;
+
+    procedure IsInvoked_FindQuotes(): Boolean
+    begin
+        exit(FindQuotesInvoked);
+    end;
+
+    procedure IsInvoked_MakeAndPostOrders(): Boolean
+    begin
+        exit(MakeAndPostOrdersInvoked);
+    end;
+
+    procedure IsInvoked_SetFilters(WithSalespersonCode: Code[20]; WithCustomerPostingGroup: Code[20]; WithAtDate: Date): Boolean
+    begin
+        exit(SetFiltersInvoked and
+            (SetFilters_InvokedWith_SalespersonCode = WithSalespersonCode) and
+            (SetFilters_InvokedWith_CustomerPostingGroup = WithCustomerPostingGroup) and
+            (SetFilters_InvokedWith_AtDate = WithAtDate));
+    end;
+
+    procedure CountInvoked_MakeAndPostOne(): Integer
+    begin
+        exit(MakeAndPostOneInvokedCount);
+    end;
+
+    procedure IsInvoked_GetItem(): Boolean
+    begin
+        exit(GetItemInvoked);
+    end;
+
+    procedure IsInvoked_SetLineFilters(): Boolean
+    begin
+        exit(SetLineFiltersInvoked);
+    end;
+
+    procedure CountInvoked_IsLineApplicable(): Integer
+    begin
+        exit(IsLineApplicableInvokedCount);
+    end;
+
+    procedure IsInvoked_LogError(WithEventId: Text; WithErrorMessage: Text): Boolean
+    begin
+        exit(LogErrorInvoked and
+            (LogError_InvokedWith_EventId = WithEventId) and
+            (LogError_InvokedWith_ErrorMessage = WithErrorMessage));
+    end;
+
+    procedure IsInvoked_ConvertQuoteToOrder(): Boolean
+    begin
+        exit(ConvertQuoteToOrderInvoked);
+    end;
+
+    procedure IsInvoked_ReleaseOrder(): Boolean
+    begin
+        exit(ReleaseOrderInvoked);
+    end;
+
+    procedure IsInvoked_PostOrder(): Boolean
+    begin
+        exit(PostOrderInvoked);
+    end;
+
+    procedure CountInvoked_CommitTransaction(): Integer
+    begin
+        exit(CommitTransactionInvokedCount);
+    end;
+
+    procedure FindQuotes(var SalesHeader: Record "Sales Header"; Controller: Interface IProcessQuotes): Boolean;
+    begin
+        FindQuotesInvoked := true;
+        exit(ExpectedFindQuotesResult);
+    end;
+
+    procedure MakeAndPostOrders(var SalesHeader: Record "Sales Header"; Controller: Interface IProcessQuotes);
+    begin
+        MakeAndPostOrdersInvoked := true;
+    end;
+
+    procedure GetDomesticPostingGroup(var SalesSetup: Record "Sales & Receivables Setup"): Code[20]
+    begin
+        exit(ExpectedGetDomesticPostingGroupResult);
     end;
 
     procedure GetSalespersonCode(var UserSetup: Record "User Setup"; WithGui: Boolean): Code[20]
     begin
-        exit(_salespersonCode);
+        exit(ExpectedGetSalespersonCodeResult);
     end;
 
     procedure SetFilters(var SalesHeader: Record "Sales Header"; SalespersonCode: Code[20]; CustomerPostingGroup: Code[20]; AtDate: Date)
     begin
-        _isInvokedSetFilters := true;
-        _lastSetFiltersParam := SalesHeader;
+        SetFiltersInvoked := true;
+        SetFilters_InvokedWith_SalespersonCode := SalespersonCode;
+        SetFilters_InvokedWith_CustomerPostingGroup := CustomerPostingGroup;
+        SetFilters_InvokedWith_AtDate := AtDate;
     end;
 
-    procedure SetResult_DomesticCustomerPostingGroup(NewPostingGroup: Code[20])
+    procedure MakeAndPostOne(var SalesQuote: Record "Sales Header"; Controller: Interface IProcessQuotes; Converter: Interface IQuoteToOrder; Releaser: Interface IReleaseDocument; Poster: Interface IPostDocument)
     begin
-        _domesticCustomerPostingGroup := NewPostingGroup;
+        MakeAndPostOneInvokedCount += 1;
     end;
 
-    procedure SetResult_SalespersonCode(NewSalespersonCode: Code[20])
+    procedure GetItem(var SalesLine: Record "Sales Line"; var Item: Record Item)
     begin
-        _salespersonCode := NewSalespersonCode;
+        GetItemInvoked := true;
     end;
 
-    procedure IsInvoked_SetFilters(var SalesQuote: Record "Sales Header"): Boolean
+    procedure SetLineFilters(var SalesQuote: Record "Sales Header"; var SalesLine: Record "Sales Line")
     begin
-        SalesQuote := _lastSetFiltersParam;
-        exit(_isInvokedSetFilters);
+        SetLineFiltersInvoked := true;
+    end;
+
+    procedure IsLineApplicable(var SalesLine: Record "Sales Line"; var Item: Record Item; Controller: Interface IProcessQuotes): Boolean
+    begin
+        IsLineApplicableInvokedCount += 1;
+        exit(ExpectedIsLineApplicable.Get(IsLineApplicableInvokedCount));
+    end;
+
+    procedure LogError(EventId: Text; ErrorMessage: Text)
+    begin
+        LogErrorInvoked := true;
+        LogError_InvokedWith_EventId := EventId;
+        LogError_InvokedWith_ErrorMessage := ErrorMessage;
+    end;
+
+    procedure ConvertQuoteToOrder(var SalesQuote: Record "Sales Header"; var SalesOrder: Record "Sales Header"; Controller: Interface IProcessQuotes; Converter: Interface IQuoteToOrder) Result: Boolean
+    begin
+        ConvertQuoteToOrderInvoked := true;
+        exit(ExpectedConvertQuoteToOrderResult);
+    end;
+
+    procedure ReleaseOrder(var SalesOrder: Record "Sales Header"; Controller: Interface IProcessQuotes; Releaser: Interface IReleaseDocument) Result: Boolean
+    begin
+        ReleaseOrderInvoked := true;
+        exit(ExpectedReleaseOrderResult);
+    end;
+
+    procedure PostOrder(var SalesOrder: Record "Sales Header"; Controller: Interface IProcessQuotes; Poster: Interface IPostDocument) Result: Boolean
+    begin
+        PostOrderInvoked := true;
+        exit(ExpectedPostOrderResult);
+    end;
+
+    procedure CommitTransaction()
+    begin
+        CommitTransactionInvokedCount += 1;
     end;
 }
