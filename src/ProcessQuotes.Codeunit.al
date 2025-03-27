@@ -51,16 +51,28 @@ codeunit 50011 ProcessQuotes implements IProcessQuotes
 
     procedure GetDomesticCustomerPostingGroup(var SalesSetup: Record "Sales & Receivables Setup"): Code[20]
     begin
-
+        SalesSetup.Get();
+        SalesSetup.TestField("VDE Domestic Cust. Post. Group");
+        exit(SalesSetup."VDE Domestic Cust. Post. Group");
     end;
 
     procedure GetSalespersonCode(var UserSetup: Record "User Setup"; GuiAllowed: Boolean): Code[20]
     begin
+        if not UserSetup.Get(UserId) then
+            exit;
 
+        if UserSetup."Salespers./Purch. Code" = '' then
+            UserSetup.TestField("Salespers./Purch. Code");
+
+        exit(UserSetup."Salespers./Purch. Code");
     end;
 
     procedure SetFilters(var SalesHeader: Record "Sales Header"; SalespersonCode: Code[20]; CustomerPostingGroup: Code[20]; AtDate: Date)
     begin
-
+        SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Quote);
+        SalesHeader.SetRange(Status, SalesHeader."Status"::Open);
+        SalesHeader.SetRange("Shipment Date", AtDate);
+        SalesHeader.SetRange("Salesperson Code", SalespersonCode);
+        SalesHeader.SetRange("Customer Posting Group", CustomerPostingGroup);
     end;
 }
